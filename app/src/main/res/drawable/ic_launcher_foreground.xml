@@ -1,0 +1,25 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <group android:translateX="6.3" android:translateY="6.3" android:scaleX="0.186" android:scaleY="0.186">
+        <!-- Four Pomodoro rounds: three solid, the fourth faded -->
+        <path android:pathData="M256,106 A150,150 0 1 1 255.99,106"
+            android:strokeColor="#FF4FD1A5" android:strokeWidth="22"
+            android:trimPathStart="0.0111" android:trimPathEnd="0.2445"/>
+        <path android:pathData="M256,106 A150,150 0 1 1 255.99,106"
+            android:strokeColor="#FF4FD1A5" android:strokeWidth="22"
+            android:trimPathStart="0.2611" android:trimPathEnd="0.4945"/>
+        <path android:pathData="M256,106 A150,150 0 1 1 255.99,106"
+            android:strokeColor="#FF4FD1A5" android:strokeWidth="22"
+            android:trimPathStart="0.5111" android:trimPathEnd="0.7445"/>
+        <path android:pathData="M256,106 A150,150 0 1 1 255.99,106"
+            android:strokeColor="#4D4FD1A5" android:strokeWidth="22"
+            android:trimPathStart="0.7611" android:trimPathEnd="0.9945"/>
+        <!-- Outlined padlock -->
+        <path android:pathData="M228,248v-26a28,28 0 0 1 56,0v26"
+            android:strokeColor="#FF4FD1A5" android:strokeWidth="16" android:strokeLineCap="round"/>
+        <path android:pathData="M220,248h72a16,16 0 0 1 16,16v40a16,16 0 0 1 -16,16h-72a16,16 0 0 1 -16,-16v-40a16,16 0 0 1 16,-16z"
+            android:strokeColor="#FF4FD1A5" android:strokeWidth="16"/>
+        <path android:pathData="M256,274a8,8 0 1 0 0.01,0z" android:fillColor="#FF4FD1A5"/>
+    </group>
+</vector>

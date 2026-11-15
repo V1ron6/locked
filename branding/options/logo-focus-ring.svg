@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8B7CFF"/>
+      <stop offset="1" stop-color="#4B3BD6"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- Pomodoro ring: 25/30 focus (solid) + 5/30 break (faded) -->
+  <g transform="rotate(-90 256 256)" fill="none" stroke-width="22">
+    <circle cx="256" cy="256" r="150" stroke="#FFFFFF" stroke-dasharray="785.4 942.5"/>
+    <circle cx="256" cy="256" r="150" stroke="#FFFFFF" stroke-opacity="0.35" stroke-dasharray="157.1 942.5" stroke-dashoffset="-785.4"/>
+  </g>
+  <!-- Padlock -->
+  <path d="M226 246v-24a30 30 0 0 1 60 0v24" fill="none" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round"/>
+  <rect x="204" y="244" width="104" height="74" rx="15" fill="#FFFFFF"/>
+  <circle cx="256" cy="273" r="9" fill="#4B3BD6"/>
+  <path d="M256 277v16" stroke="#4B3BD6" stroke-width="9" stroke-linecap="round"/>
+</svg>

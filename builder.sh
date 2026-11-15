@@ -26,7 +26,8 @@ if [ "$(id -u)" -ne 0 ] && command -v sudo >/dev/null 2>&1; then SUDO="sudo"; fi
 
 # ---------------------------------------------------------------- 1. JDK 17+
 java_major() {
-  java -version 2>&1 | awk -F'[".]' '/version/ { print ($2 == "1") ? $3 : $2; exit }'
+  local java_bin="${1:-java}"
+  "$java_bin" -version 2>&1 | awk -F'[".]' '/version/ { print ($2 == "1") ? $3 : $2; exit }'
 }
 
 need_jdk=1
@@ -45,9 +46,24 @@ if [ "$need_jdk" -eq 1 ]; then
   fi
 fi
 
-if [ -z "${JAVA_HOME:-}" ] && command -v javac >/dev/null 2>&1; then
-  JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
-  export JAVA_HOME
+java_home_major=0
+if [ -n "${JAVA_HOME:-}" ] && [ -x "$JAVA_HOME/bin/java" ]; then
+  java_home_major="$(java_major "$JAVA_HOME/bin/java" || echo 0)"
+fi
+
+if [ "$need_jdk" -eq 1 ] || [ "$java_home_major" -lt 17 ] || [ "$java_home_major" -gt 21 ]; then
+  for candidate in /usr/lib/jvm/java-17-openjdk-* /usr/lib/jvm/jdk-17*; do
+    if [ -x "$candidate/bin/java" ] && [ -x "$candidate/bin/javac" ]; then
+      JAVA_HOME="$candidate"
+      export JAVA_HOME
+      break
+    fi
+  done
+  [ -n "${JAVA_HOME:-}" ] || fail "JDK 17 was installed but its location could not be determined."
+fi
+
+if [ -n "${JAVA_HOME:-}" ]; then
+  export PATH="$JAVA_HOME/bin:$PATH"
 fi
 log "Using Java: $(java -version 2>&1 | grep -m1 version)"
 

@@ -52,7 +52,9 @@ object Engine {
         val base = Calendar.getInstance().apply { timeInMillis = now }
         val out = ArrayList<Slot>()
         for (s in Store.schedules(c)) {
-            if (!s.enabled || s.packages.isEmpty() || s.days.isEmpty()) continue
+            // Resolved here, at compute time, so editing the global list updates every schedule using it.
+            val pkgs = Store.packagesFor(c, s)
+            if (!s.enabled || pkgs.isEmpty() || s.days.isEmpty()) continue
             for (off in -1..8) {
                 val day = (base.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, off) }
                 if (day.get(Calendar.DAY_OF_WEEK) !in s.days) continue
@@ -60,7 +62,7 @@ object Engine {
                 val end = at(base, off + if (s.overnight) 1 else 0, s.endMin)
                 if (end <= now) continue
                 if (end <= (dismissed[s.id] ?: 0L)) continue
-                out += Slot(s.id, s.name, start, end, s.packages)
+                out += Slot(s.id, s.name, start, end, pkgs)
             }
         }
         Store.manualSlot(c, now)?.let { out += it }
@@ -115,10 +117,11 @@ object Engine {
 
     // ---------------------------------------------------------------- actions
 
-    fun startManual(c: Context, minutes: Int, pkgs: Set<String>) {
+    fun startManual(c: Context, minutes: Int, pkgs: Set<String>, useGlobal: Boolean) {
         val now = System.currentTimeMillis()
         Store.setQuickPkgs(c, pkgs)
-        Store.setManual(c, now, now + minutes * 60_000L, pkgs)
+        Store.setQuickUseGlobal(c, useGlobal)
+        Store.setManual(c, now, now + minutes * 60_000L, pkgs, useGlobal)
         tick(c)
     }
 

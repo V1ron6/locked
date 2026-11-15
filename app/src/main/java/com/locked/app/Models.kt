@@ -10,8 +10,11 @@ data class Schedule(
     val days: Set<Int>,
     val startMin: Int,
     val endMin: Int,
+    /** This schedule's own app list. Only used when [useGlobal] is false. */
     val packages: Set<String>,
     val enabled: Boolean = true,
+    /** When true the schedule locks the shared global block list instead of [packages]. */
+    val useGlobal: Boolean = false,
 ) {
     /** End time at or before start time means the session runs past midnight. */
     val overnight: Boolean get() = endMin <= startMin
@@ -24,6 +27,7 @@ data class Schedule(
         .put("end", endMin)
         .put("pkgs", JSONArray().also { a -> packages.forEach { a.put(it) } })
         .put("enabled", enabled)
+        .put("global", useGlobal)
 
     companion object {
         fun fromJson(o: JSONObject): Schedule {
@@ -37,6 +41,8 @@ data class Schedule(
                 endMin = o.getInt("end"),
                 packages = (0 until p.length()).map { p.getString(it) }.toSet(),
                 enabled = o.optBoolean("enabled", true),
+                // Schedules saved by 0.1.x have no "global" key and keep their own list.
+                useGlobal = o.optBoolean("global", false),
             )
         }
     }

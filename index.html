@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Locked — focus mode with multiple schedules</title>
+<meta name="description" content="Locked is a free, open-source Android app that locks your distracting apps on as many schedules as you want, with a built-in 25/5 Pomodoro. Download the APK — no compiling needed.">
+<meta name="theme-color" content="#0b0e14">
+<meta property="og:title" content="Locked — focus mode with multiple schedules">
+<meta property="og:description" content="Lock distracting apps on as many schedules as you like, with a built-in Pomodoro. Free and open source.">
+<link rel="icon" href="branding/logo.svg" type="image/svg+xml">
+<style>
+  :root {
+    --bg: #0b0e14; --surface: #141923; --surface2: #1c2330; --text: #e8eaf0; --muted: #9aa3b5;
+    --line: #2a3342; --mint: #4fd1a5; --violet: #8b7cff; --on-mint: #00382a; --glow: rgba(79,209,165,.14);
+    --radius: 20px;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f6f7fb; --surface: #ffffff; --surface2: #edeff5; --text: #12151c; --muted: #5a6377;
+      --line: #dadfea; --mint: #0e8f6b; --violet: #5b4bdb; --on-mint: #ffffff; --glow: rgba(14,143,107,.10);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+  .ic { width: 20px; height: 20px; flex: none; }
+  :focus-visible { outline: 2px solid var(--mint); outline-offset: 3px; border-radius: 8px; }
+
+  /* header */
+  header { padding: 18px 0; }
+  header .wrap { display: flex; align-items: center; gap: 24px; }
+  .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; font-weight: 700; font-size: 20px; letter-spacing: -.01em; }
+  .brand svg { width: 38px; height: 38px; }
+  nav { margin-left: auto; display: flex; gap: 22px; font-size: 15px; color: var(--muted); }
+  nav a { text-decoration: none; }
+  nav a:hover { color: var(--text); }
+  @media (max-width: 640px) { nav { display: none; } }
+
+  /* buttons */
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px; border: 0; cursor: pointer; text-decoration: none;
+    padding: 14px 22px; border-radius: 16px; font: inherit; font-weight: 650;
+    background: var(--mint); color: var(--on-mint); transition: transform .12s ease, filter .12s ease;
+  }
+  .btn:hover { filter: brightness(1.07); transform: translateY(-1px); }
+  .btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+  .btn.small { padding: 9px 14px; border-radius: 12px; font-size: 14px; }
+  @media (prefers-reduced-motion: reduce) { .btn { transition: none; } .btn:hover { transform: none; } html { scroll-behavior: auto; } }
+
+  /* hero */
+  .hero { display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: center; padding: 36px 0 72px; }
+  @media (max-width: 860px) { .hero { grid-template-columns: 1fr; gap: 40px; padding-bottom: 48px; } }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px;
+    background: var(--glow); color: var(--mint); font-size: 13px; font-weight: 650; letter-spacing: .02em;
+  }
+  h1 { font-size: clamp(34px, 5.4vw, 56px); line-height: 1.05; letter-spacing: -.03em; margin: 18px 0 16px; }
+  h1 em { font-style: normal; color: var(--mint); }
+  .lede { font-size: 18px; color: var(--muted); max-width: 52ch; margin: 0 0 28px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .dl-meta { margin: 14px 0 0; font-size: 14px; color: var(--muted); }
+  .dl-meta b { color: var(--text); font-weight: 600; }
+
+  /* phone mock */
+  .phone-wrap { display: grid; place-items: center; }
+  .phone {
+    width: 292px; padding: 11px; border-radius: 42px; background: #05070b;
+    border: 1px solid #263044; box-shadow: 0 30px 80px -20px rgba(79,209,165,.28), 0 8px 30px rgba(0,0,0,.45);
+  }
+  .screen { background: #0b0e14; border-radius: 32px; padding: 22px 16px 20px; color: #e8eaf0; min-height: 520px; }
+  .m-title { font-weight: 700; font-size: 21px; margin: 4px 4px 14px; }
+  .m-card { background: #141923; border: 1px solid #2f6b58; border-radius: 22px; padding: 16px; }
+  .m-row { display: flex; align-items: center; justify-content: space-between; }
+  .m-pill { background: rgba(79,209,165,.16); color: #4fd1a5; font-size: 11px; font-weight: 800; letter-spacing: .04em; padding: 5px 10px; border-radius: 999px; }
+  .m-round { font-size: 12px; color: #9aa3b5; }
+  .m-time { font: 300 46px/1.1 ui-monospace, SFMono-Regular, Menlo, monospace; margin: 14px 0 0; }
+  .m-sub { font-size: 12.5px; color: #9aa3b5; }
+  .m-bar { height: 5px; border-radius: 3px; background: #2a3342; margin: 12px 0 10px; overflow: hidden; }
+  .m-bar i { display: block; height: 100%; width: 26%; background: #4fd1a5; border-radius: 3px; }
+  .m-meta { font-size: 11px; color: #9aa3b5; }
+  .m-label { font-size: 10.5px; letter-spacing: .08em; color: #9aa3b5; font-weight: 700; margin: 18px 4px 8px; }
+  .m-sched { background: #141923; border: 1px solid #2a3342; border-radius: 18px; padding: 12px 14px; margin-bottom: 10px; }
+  .m-sched b { font-size: 14px; }
+  .m-sched small { display: block; color: #9aa3b5; font-size: 11.5px; }
+  .m-days { display: flex; gap: 4px; margin: 8px 0 6px; }
+  .m-days span { width: 19px; height: 19px; border-radius: 50%; background: #1c2330; color: #9aa3b5; font-size: 9px; font-weight: 800; display: grid; place-items: center; }
+  .m-days span.on { background: #4fd1a5; color: #00382a; }
+  .m-tag { color: #8b7cff; font-weight: 700; }
+
+  /* sections */
+  section { padding: 64px 0; border-top: 1px solid var(--line); }
+  h2 { font-size: clamp(26px, 3.6vw, 36px); letter-spacing: -.02em; line-height: 1.15; margin: 0 0 10px; }
+  .sub { color: var(--muted); max-width: 60ch; margin: 0 0 36px; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 580px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+  .card .badge { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: var(--glow); color: var(--mint); margin-bottom: 14px; }
+  .card.v .badge { background: rgba(139,124,255,.14); color: var(--violet); }
+  .card h3 { margin: 0 0 6px; font-size: 17px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
+
+  /* install */
+  ol.steps { list-style: none; counter-reset: s; margin: 0; padding: 0; display: grid; gap: 14px; }
+  ol.steps li {
+    counter-increment: s; position: relative; background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 18px 20px 18px 66px;
+  }
+  ol.steps li::before {
+    content: counter(s); position: absolute; left: 20px; top: 18px; width: 30px; height: 30px; border-radius: 50%;
+    background: var(--mint); color: var(--on-mint); font-weight: 800; display: grid; place-items: center; font-size: 14px;
+  }
+  ol.steps b { display: block; margin-bottom: 2px; }
+  ol.steps span { color: var(--muted); font-size: 15px; }
+  .note { margin-top: 18px; padding: 16px 18px; border-radius: 16px; background: var(--surface2); color: var(--muted); font-size: 14.5px; }
+  .note b { color: var(--text); }
+
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .sha { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
+  .sha code { background: var(--surface2); border: 1px solid var(--line); padding: 8px 12px; border-radius: 10px; font-size: 12.5px; word-break: break-all; flex: 1 1 280px; }
+
+  /* versions */
+  .versions { display: grid; gap: 14px; }
+  .ver { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; }
+  .ver.latest { border-color: var(--mint); box-shadow: 0 0 0 4px var(--glow); }
+  .ver-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+  .ver-head h3 { margin: 0; font-size: 20px; letter-spacing: -.01em; }
+  .tag { font-size: 11.5px; font-weight: 800; letter-spacing: .04em; padding: 4px 9px; border-radius: 999px; background: var(--mint); color: var(--on-mint); }
+  .meta { color: var(--muted); font-size: 14px; }
+  .ver-actions { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+  .ver ul { margin: 14px 0 0; padding-left: 20px; color: var(--muted); font-size: 15px; }
+  .ver li { margin: 3px 0; }
+  .ver li::marker { color: var(--mint); }
+  .ver li code { background: var(--surface2); padding: 1px 6px; border-radius: 6px; font-size: .88em; color: var(--text); }
+  .empty { color: var(--muted); padding: 24px; border: 1px dashed var(--line); border-radius: var(--radius); }
+
+  footer { border-top: 1px solid var(--line); padding: 34px 0 54px; color: var(--muted); font-size: 14px; }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; }
+</style>
+</head>
+<body>
+
+<!-- Icons and logo, defined once and reused with <use> -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="lg-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#151A26"/><stop offset="1" stop-color="#0B0E14"/>
+    </linearGradient>
+  </defs>
+  <symbol id="logo" viewBox="0 0 512 512">
+    <rect width="512" height="512" rx="112" fill="url(#lg-bg)"/>
+    <g transform="rotate(-90 256 256) rotate(4 256 256)" fill="none" stroke="#4FD1A5" stroke-width="22">
+      <circle cx="256" cy="256" r="150" stroke-dasharray="220 722.5" stroke-dashoffset="0"/>
+      <circle cx="256" cy="256" r="150" stroke-dasharray="220 722.5" stroke-dashoffset="-235.6"/>
+      <circle cx="256" cy="256" r="150" stroke-dasharray="220 722.5" stroke-dashoffset="-471.2"/>
+      <circle cx="256" cy="256" r="150" stroke-dasharray="220 722.5" stroke-dashoffset="-706.8" stroke-opacity=".3"/>
+    </g>
+    <path d="M228 248v-26a28 28 0 0 1 56 0v26" fill="none" stroke="#4FD1A5" stroke-width="16" stroke-linecap="round"/>
+    <rect x="204" y="248" width="104" height="72" rx="16" fill="none" stroke="#4FD1A5" stroke-width="16"/>
+    <circle cx="256" cy="282" r="8" fill="#4FD1A5"/>
+  </symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></g></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></g></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h5"/><path d="M17.5 13a4.5 4.5 0 1 0 0 9a4.5 4.5 0 0 0 0-9z"/><path d="M17.5 15v3l1.5 1"/></g></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M9 12l2 2 4-4"/></g></symbol>
+  <symbol id="i-timer" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2h4"/><path d="M12 14l3-3"/><path d="M12 6a8 8 0 1 0 0 16a8 8 0 0 0 0-16z"/></g></symbol>
+  <symbol id="i-zap" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></g></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></g></symbol>
+  <symbol id="i-bell-off" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.7 3A6 6 0 0 1 18 8c0 2.687.77 4.653 1.707 6"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="M2 2l20 20"/></g></symbol>
+  <symbol id="i-coffee" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v2"/><path d="M14 2v2"/><path d="M6 2v2"/><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"/></g></symbol>
+</svg>
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Locked home">
+      <svg viewBox="0 0 512 512" aria-hidden="true"><use href="#logo"/></svg>
+      Locked
+    </a>
+    <nav aria-label="Sections">
+      <a href="#features">Features</a>
+      <a href="#install">Install</a>
+      <a href="#versions">Versions</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <span class="eyebrow"><svg class="ic" style="width:16px;height:16px"><use href="#i-lock"/></svg> Free · Open source · Android</span>
+        <h1>Focus mode with <em>as many schedules</em> as you need.</h1>
+        <p class="lede">Android's built-in focus mode gives you one schedule. Locked gives you as many as you want — each one locks its own apps, starts on its own, and runs a 25/5 Pomodoro until time's up.</p>
+        <div class="cta">
+          <a id="dl-btn" class="btn" href="#versions" download>
+            <svg class="ic"><use href="#i-download"/></svg>
+            <span id="dl-label">Download APK</span>
+          </a>
+          <a class="btn ghost" href="#install">How to install</a>
+        </div>
+        <p class="dl-meta" id="dl-meta">Looking for the latest build…</p>
+      </div>
+
+      <div class="phone-wrap" aria-hidden="true">
+        <div class="phone"><div class="screen">
+          <div class="m-title">Locked</div>
+          <div class="m-card">
+            <div class="m-row"><span class="m-pill">FOCUS</span><span class="m-round">Round 2</span></div>
+            <div class="m-time">18:42</div>
+            <div class="m-sub">until your next break</div>
+            <div class="m-bar"><i></i></div>
+            <div class="m-meta">Deep work · ends 11:00 · 12 apps locked</div>
+          </div>
+          <div class="m-label">SCHEDULES</div>
+          <div class="m-sched">
+            <b>Deep work</b><small>09:00 – 11:00</small>
+            <div class="m-days"><span class="on">M</span><span class="on">T</span><span class="on">W</span><span class="on">T</span><span class="on">F</span><span>S</span><span>S</span></div>
+            <small><span class="m-tag">Global list</span> · 12 apps</small>
+          </div>
+          <div class="m-sched">
+            <b>Evening study</b><small>20:00 – 22:00</small>
+            <div class="m-days"><span class="on">M</span><span>T</span><span class="on">W</span><span>T</span><span class="on">F</span><span>S</span><span>S</span></div>
+            <small>Custom · 4 apps</small>
+          </div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <section id="features">
+    <div class="wrap">
+      <h2>Built to keep you in the zone</h2>
+      <p class="sub">Everything runs on your phone. No account, no ads, no network access.</p>
+      <div class="grid">
+        <div class="card"><div class="badge"><svg class="ic"><use href="#i-calendar"/></svg></div>
+          <h3>Unlimited schedules</h3><p>Set days, start and end times (overnight too) and a block list for each. They start automatically, with a heads-up a minute before.</p></div>
+        <div class="card v"><div class="badge"><svg class="ic"><use href="#i-shield"/></svg></div>
+          <h3>Global or custom block lists</h3><p>Build one list of distractions and reuse it on every schedule, or pick apps just for one. Edit the global list once and every schedule follows.</p></div>
+        <div class="card"><div class="badge"><svg class="ic"><use href="#i-timer"/></svg></div>
+          <h3>Built-in Pomodoro</h3><p>25 minutes locked in, then a 5-minute break with your apps unlocked. It repeats until the session ends, with a live countdown.</p></div>
+        <div class="card"><div class="badge"><svg class="ic"><use href="#i-lock"/></svg></div>
+          <h3>Hard to cheat, easy to leave</h3><p>Locked apps are covered by a block screen. Ending early takes a 3-second hold plus a puzzle, so it's a decision, not a reflex.</p></div>
+        <div class="card"><div class="badge"><svg class="ic"><use href="#i-zap"/></svg></div>
+          <h3>Start now</h3><p>No schedule needed. Pick a duration, pick the global list or a custom one, and lock in right away.</p></div>
+        <div class="card v"><div class="badge"><svg class="ic"><use href="#i-bell-off"/></svg></div>
+          <h3>Always-allowed apps</h3><p>Phone, emergency and messages stay reachable. Notifications from locked apps wait until your break.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="install">
+    <div class="wrap">
+      <h2>Install in a minute</h2>
+      <p class="sub">No compiling and no Play Store. Download the APK straight to your phone.</p>
+      <ol class="steps">
+        <li><b>Download the APK</b><span>Use the button above on your phone. It's a debug build, about <span id="size-inline">10 MB</span>.</span></li>
+        <li><b>Open it and allow the install</b><span>If Android asks, allow “Install unknown apps” for your browser or files app. Play Protect may show a warning for debug builds; that's expected.</span></li>
+        <li><b>Turn on the accessibility service</b><span>Open Locked → <i>Finish setup</i>. Locked only looks at which app is in front, never at what's on screen. If the toggle is greyed out: App info → ⋮ → <i>Allow restricted settings</i>, then try again.</span></li>
+        <li><b>Create your first schedule</b><span>Allow notifications and exact alarms, build your global block list in Settings, then add a schedule.</span></li>
+      </ol>
+      <div class="note"><b>Updating:</b> installing over an older build only works if it was signed with the same debug key. If Android says “App not installed”, uninstall the old version first (your schedules will be cleared).</div>
+      <div class="sha" id="sha-box" hidden>
+        <code id="sha-cmd"></code>
+        <button class="btn ghost small" id="sha-copy" type="button"><svg class="ic" style="width:16px;height:16px"><use href="#i-copy"/></svg><span>Copy checksum command</span></button>
+      </div>
+    </div>
+  </section>
+
+  <section id="versions">
+    <div class="wrap">
+      <h2>All versions</h2>
+      <p class="sub">Newest first. Every build is kept, so you can roll back if something misbehaves.</p>
+      <div class="versions" id="versions-list"></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Locked · open source under the MIT license · made by ByteBandit</span>
+    <span>No data leaves your phone.</span>
+  </div>
+</footer>
+
+<script>
+/* Release list. Rewritten by tools/update_landing.py (run automatically by ./builder.sh). */
+/*RELEASES:START*/
+const RELEASES = [
+  {
+    "version": "0.1.0",
+    "code": 1,
+    "date": "2026-11-15",
+    "file": "dist/locked-v0.1.0-debug.apk",
+    "size": 9627638,
+    "sha256": "82d91dbd39c070d55c52714a38bbeb1b0abb705d34dad7c47f580748f361974a",
+    "notes": [
+      "First release: multiple schedules with days, start/end times (overnight supported) and per-schedule app lists.",
+      "Schedules start automatically, with a 1-minute heads-up notification.",
+      "Pomodoro inside every session: 25 minutes locked, 5-minute break with apps unlocked.",
+      "Accessibility-based blocking with a block screen and a live countdown notification.",
+      "Always-allowed apps, \"Start now\" quick sessions, and end-early protection (hold, then puzzle or phrase).",
+      "Optional Settings blocking during focus and notification snoozing until breaks."
+    ]
+  }
+];
+/*RELEASES:END*/
+</script>
+<script>
+(function () {
+  var $ = function (s) { return document.querySelector(s); };
+  // Decimal MB, matching what Android's file manager shows.
+  var mb = function (b) { return (b / 1e6).toFixed(1) + " MB"; };
+  // Changelog bullets may contain `code` spans; build them as text nodes (never innerHTML).
+  var rich = function (li, text) {
+    text.split("`").forEach(function (part, i) {
+      if (!part) return;
+      li.appendChild(i % 2 ? el("code", null, part) : document.createTextNode(part));
+    });
+  };
+  var day = function (d) {
+    var t = new Date(d + "T00:00:00");
+    return isNaN(t) ? d : t.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  };
+  var el = function (tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  };
+  var name = function (r) { return r.file.split("/").pop(); };
+  var shaCmd = function (r) { return "echo \"" + r.sha256 + "  " + name(r) + "\" | sha256sum -c -"; };
+
+  function copy(text, btn) {
+    var label = btn.querySelector("span");
+    var done = function () {
+      var old = label.textContent;
+      label.textContent = "Copied";
+      setTimeout(function () { label.textContent = old; }, 1600);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, done);
+    } else {
+      var ta = document.createElement("textarea");
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); } catch (e) {}
+      document.body.removeChild(ta); done();
+    }
+  }
+
+  var list = $("#versions-list");
+  if (!RELEASES.length) {
+    $("#dl-label").textContent = "No build yet";
+    $("#dl-meta").textContent = "No APK found in dist/. Run ./builder.sh to build one.";
+    list.appendChild(el("div", "empty", "No builds yet. Run ./builder.sh and this page will list them."));
+    return;
+  }
+
+  var latest = RELEASES[0];
+  var btn = $("#dl-btn");
+  btn.href = latest.file;
+  btn.setAttribute("download", name(latest));
+  $("#dl-label").textContent = "Download v" + latest.version;
+
+  var meta = $("#dl-meta");
+  meta.textContent = "";
+  [["Debug APK", ""], [mb(latest.size), ""], ["Android 8.0+", ""], ["Released " + day(latest.date), ""]].forEach(function (p, i) {
+    if (i) meta.appendChild(document.createTextNode(" · "));
+    var b = el("b", null, p[0]);
+    meta.appendChild(b);
+  });
+  $("#size-inline").textContent = mb(latest.size);
+
+  $("#sha-box").hidden = false;
+  $("#sha-cmd").textContent = shaCmd(latest);
+  $("#sha-copy").addEventListener("click", function () { copy(shaCmd(latest), this); });
+
+  RELEASES.forEach(function (r, i) {
+    var card = el("article", "ver" + (i === 0 ? " latest" : ""));
+    var head = el("div", "ver-head");
+    head.appendChild(el("h3", null, "v" + r.version));
+    if (i === 0) head.appendChild(el("span", "tag", "LATEST"));
+    head.appendChild(el("span", "meta", day(r.date) + " · " + mb(r.size) + (r.code != null ? " · build " + r.code : "")));
+
+    var actions = el("div", "ver-actions");
+    var dl = el("a", "btn small" + (i === 0 ? "" : " ghost"));
+    dl.href = r.file; dl.setAttribute("download", name(r));
+    dl.innerHTML = '<svg class="ic" style="width:16px;height:16px"><use href="#i-download"/></svg>';
+    dl.appendChild(el("span", null, "Download"));
+    actions.appendChild(dl);
+
+    var cp = el("button", "btn ghost small");
+    cp.type = "button";
+    cp.innerHTML = '<svg class="ic" style="width:16px;height:16px"><use href="#i-copy"/></svg>';
+    cp.appendChild(el("span", null, "SHA-256"));
+    cp.title = r.sha256;
+    cp.addEventListener("click", function () { copy(r.sha256, cp); });
+    actions.appendChild(cp);
+    head.appendChild(actions);
+    card.appendChild(head);
+
+    if (r.notes && r.notes.length) {
+      var ul = el("ul");
+      r.notes.forEach(function (n) { var li = el("li"); rich(li, n); ul.appendChild(li); });
+      card.appendChild(ul);
+    }
+    list.appendChild(card);
+  });
+})();
+</script>
+</body>
+</html>

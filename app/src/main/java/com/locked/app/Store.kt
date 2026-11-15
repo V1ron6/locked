@@ -42,6 +42,19 @@ object Store {
     fun setEnabled(c: Context, id: String, on: Boolean) =
         save(c, schedules(c).map { if (it.id == id) it.copy(enabled = on) else it })
 
+    // ---- global block list (shared by every schedule that opts in) ----
+
+    fun globalBlockList(c: Context): Set<String> =
+        p(c).getStringSet("global_block", null)?.toSet() ?: emptySet()
+
+    fun setGlobalBlockList(c: Context, s: Set<String>) {
+        p(c).edit().putStringSet("global_block", s.toSet()).apply()
+    }
+
+    /** The apps a schedule actually locks: the global list or its own, depending on its choice. */
+    fun packagesFor(c: Context, s: Schedule): Set<String> =
+        if (s.useGlobal) globalBlockList(c) else s.packages
+
     // ---- always-allowed apps ----
 
     fun userAllowed(c: Context): Set<String> =
@@ -68,13 +81,14 @@ object Store {
         val sp = p(c)
         val end = sp.getLong("m_end", 0L)
         if (end <= now) return null
-        val pk = sp.getStringSet("m_pkgs", emptySet())?.toSet() ?: emptySet()
+        val pk = if (sp.getBoolean("m_global", false)) globalBlockList(c)
+        else sp.getStringSet("m_pkgs", emptySet())?.toSet() ?: emptySet()
         return Slot(null, "Quick session", sp.getLong("m_start", now), end, pk)
     }
 
-    fun setManual(c: Context, start: Long, end: Long, pkgs: Set<String>) {
+    fun setManual(c: Context, start: Long, end: Long, pkgs: Set<String>, useGlobal: Boolean) {
         p(c).edit().putLong("m_start", start).putLong("m_end", end)
-            .putStringSet("m_pkgs", pkgs.toSet()).apply()
+            .putStringSet("m_pkgs", pkgs.toSet()).putBoolean("m_global", useGlobal).apply()
     }
 
     fun clearManual(c: Context) {
@@ -83,6 +97,9 @@ object Store {
 
     fun quickPkgs(c: Context): Set<String> = p(c).getStringSet("quick_pkgs", null)?.toSet() ?: emptySet()
     fun setQuickPkgs(c: Context, s: Set<String>) = p(c).edit().putStringSet("quick_pkgs", s.toSet()).apply()
+
+    fun quickUseGlobal(c: Context) = p(c).getBoolean("quick_global", false)
+    fun setQuickUseGlobal(c: Context, v: Boolean) = p(c).edit().putBoolean("quick_global", v).apply()
 
     // ---- schedule occurrences ended early (scheduleId -> slot end time) ----
 

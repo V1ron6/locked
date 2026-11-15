@@ -60,6 +60,9 @@ private fun App(onRequestNotifications: () -> Unit) {
     var draftIsNew by remember { mutableStateOf(true) }
     var quickPkgs by remember { mutableStateOf(Store.quickPkgs(ctx)) }
     var quickMinutes by rememberSaveable { mutableIntStateOf(50) }
+    var quickUseGlobal by remember { mutableStateOf(Store.quickUseGlobal(ctx)) }
+    // Where the global-list picker returns to: "settings", "editor" or "quick".
+    var globalReturn by rememberSaveable { mutableStateOf("settings") }
     var confirmEnd by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
 
@@ -78,6 +81,7 @@ private fun App(onRequestNotifications: () -> Unit) {
     val next = remember(now / 5000, version) { Engine.nextSlot(ctx, now) }
     val setup = remember(now) { Perms.status(ctx) }
     val allowed = remember(version) { Store.userAllowed(ctx) }
+    val globalPkgs = remember(version) { Store.globalBlockList(ctx) }
 
     fun changed() {
         Engine.tick(ctx)
@@ -89,6 +93,7 @@ private fun App(onRequestNotifications: () -> Unit) {
             "picker_editor" -> "editor"
             "picker_quick" -> "quick"
             "picker_allowed" -> "settings"
+            "picker_global" -> globalReturn
             else -> "home"
         }
     }
@@ -100,6 +105,7 @@ private fun App(onRequestNotifications: () -> Unit) {
     when (route) {
         "home" -> HomeScreen(
             now = now, st = st, next = next, schedules = schedules, setup = setup,
+            globalCount = globalPkgs.size,
             onAdd = {
                 draft = Schedule(
                     id = UUID.randomUUID().toString(),
@@ -110,6 +116,8 @@ private fun App(onRequestNotifications: () -> Unit) {
                     ),
                     startMin = 9 * 60, endMin = 11 * 60,
                     packages = emptySet(),
+                    // New schedules default to the global list once the user has built one.
+                    useGlobal = globalPkgs.isNotEmpty(),
                 )
                 draftIsNew = true
                 route = "editor"
@@ -118,6 +126,7 @@ private fun App(onRequestNotifications: () -> Unit) {
             onToggle = { s, on -> Store.setEnabled(ctx, s.id, on); changed() },
             onQuick = {
                 if (quickPkgs.isEmpty()) quickPkgs = schedules.flatMap { it.packages }.toSet()
+                if (globalPkgs.isNotEmpty() && Store.quickPkgs(ctx).isEmpty()) quickUseGlobal = true
                 route = "quick"
             },
             onSettings = { route = "settings" },
@@ -132,7 +141,9 @@ private fun App(onRequestNotifications: () -> Unit) {
                 initial = d,
                 isNew = draftIsNew,
                 onBack = { route = "home" },
+                globalPkgs = globalPkgs,
                 onPickApps = { edited -> draft = edited; route = "picker_editor" },
+                onEditGlobal = { edited -> draft = edited; globalReturn = "editor"; route = "picker_global" },
                 onSave = { Store.upsert(ctx, it); changed(); route = "home" },
                 onDelete = { confirmDelete = true },
             )
@@ -149,12 +160,16 @@ private fun App(onRequestNotifications: () -> Unit) {
 
         "quick" -> QuickStartScreen(
             pkgs = quickPkgs,
+            useGlobal = quickUseGlobal,
+            globalCount = globalPkgs.size,
             minutes = quickMinutes,
             onMinutes = { quickMinutes = it },
+            onUseGlobal = { quickUseGlobal = it },
             onBack = { route = "home" },
             onPickApps = { route = "picker_quick" },
+            onEditGlobal = { globalReturn = "quick"; route = "picker_global" },
             onStart = {
-                Engine.startManual(ctx, quickMinutes, quickPkgs)
+                Engine.startManual(ctx, quickMinutes, quickPkgs, quickUseGlobal)
                 version++
                 route = "home"
             },
@@ -169,13 +184,22 @@ private fun App(onRequestNotifications: () -> Unit) {
 
         "settings" -> SettingsScreen(
             setup = setup,
+            globalCount = globalPkgs.size,
             allowedCount = Store.allowedEffective(ctx).size,
             onBack = { route = "home" },
+            onManageGlobal = { globalReturn = "settings"; route = "picker_global" },
             onManageAllowed = { route = "picker_allowed" },
             onFixAccessibility = fixAccessibility,
             onFixNotifications = onRequestNotifications,
             onFixAlarms = fixAlarms,
             onFixListener = fixListener,
+        )
+
+        "picker_global" -> AppPickerScreen(
+            title = "Global block list",
+            initial = globalPkgs,
+            onBack = { route = globalReturn },
+            onDone = { Store.setGlobalBlockList(ctx, it); changed(); route = globalReturn },
         )
 
         "picker_allowed" -> AppPickerScreen(

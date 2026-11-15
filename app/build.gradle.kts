@@ -4,6 +4,17 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+// Single source of truth for the app version. The APK file name, builder.sh and the
+// landing page all read these two values. For every release: bump both here and add a
+// matching "## <version> (<code>) — <date>" entry at the top of CHANGELOG.md.
+val appVersionName = "0.2.0"
+val appVersionCode = 2
+
+base {
+    // Produces app/build/outputs/apk/debug/locked-v0.2.0-debug.apk
+    archivesName.set("locked-v$appVersionName")
+}
+
 android {
     namespace = "com.locked.app"
     compileSdk = 34
@@ -12,8 +23,8 @@ android {
         applicationId = "com.locked.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
     }
 
     buildTypes {

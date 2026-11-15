@@ -32,8 +32,10 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SettingsScreen(
     setup: SetupStatus,
+    globalCount: Int,
     allowedCount: Int,
     onBack: () -> Unit,
+    onManageGlobal: () -> Unit,
     onManageAllowed: () -> Unit,
     onFixAccessibility: () -> Unit,
     onFixNotifications: () -> Unit,
@@ -85,6 +87,17 @@ fun SettingsScreen(
                             },
                         )
                     }
+                }
+
+                SectionLabel("Block lists")
+                Panel(Modifier.fillMaxWidth()) {
+                    SettingRow(
+                        R.drawable.ic_shield_check, "Global block list",
+                        if (globalCount == 0) "Not set up yet. Build one list of distractions and reuse it across schedules."
+                        else "$globalCount apps · used by every schedule set to “Global list”",
+                        trailing = { Ic(R.drawable.ic_chevron_right, tint = cs.onSurfaceVariant) },
+                        onClick = onManageGlobal,
+                    )
                 }
 
                 SectionLabel("Always allowed")

@@ -43,6 +43,7 @@ fun HomeScreen(
     next: Slot?,
     schedules: List<Schedule>,
     setup: SetupStatus,
+    globalCount: Int,
     onAdd: () -> Unit,
     onEdit: (Schedule) -> Unit,
     onToggle: (Schedule, Boolean) -> Unit,
@@ -106,7 +107,7 @@ fun HomeScreen(
                 }
             } else {
                 items(schedules, key = { it.id }) { s ->
-                    ScheduleCard(s, onClick = { onEdit(s) }, onToggle = { onToggle(s, it) })
+                    ScheduleCard(s, globalCount, onClick = { onEdit(s) }, onToggle = { onToggle(s, it) })
                 }
             }
         }
@@ -265,7 +266,7 @@ private fun SetupRow(icon: Int, title: String, desc: String, onClick: () -> Unit
 }
 
 @Composable
-private fun ScheduleCard(s: Schedule, onClick: () -> Unit, onToggle: (Boolean) -> Unit) {
+private fun ScheduleCard(s: Schedule, globalCount: Int, onClick: () -> Unit, onToggle: (Boolean) -> Unit) {
     val cs = MaterialTheme.colorScheme
     Panel(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).clickable(onClick = onClick)) {
         Column(Modifier.padding(16.dp)) {
@@ -294,7 +295,7 @@ private fun ScheduleCard(s: Schedule, onClick: () -> Unit, onToggle: (Boolean) -
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Ic(R.drawable.ic_layout_grid, tint = cs.onSurfaceVariant, size = 14.dp)
                 Text(
-                    "  ${s.packages.size} apps locked",
+                    if (s.useGlobal) "  Global list · $globalCount apps" else "  Custom · ${s.packages.size} apps",
                     style = MaterialTheme.typography.bodySmall,
                     color = cs.onSurfaceVariant,
                 )

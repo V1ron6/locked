@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 # builder.sh — one-command build for Locked.
 #
-#   ./builder.sh            build a debug APK  -> dist/locked-debug.apk
-#   ./builder.sh release    build a release APK (unsigned) -> dist/locked-release-unsigned.apk
+#   ./builder.sh            build a debug APK  -> dist/locked-v<version>-debug.apk
+#                           (older versions stay in dist/; index.html is refreshed)
+#   ./builder.sh release    build a release APK -> dist/locked-v<version>-release-unsigned.apk
 #   ./builder.sh install    build debug and `adb install -r` it
+#   ./builder.sh page       only refresh the download page (index.html) from dist/
 #   ./builder.sh clean      gradle clean
+#
+# The version comes from app/build.gradle.kts (appVersionName / appVersionCode).
 #
 # Installs JDK 17 and the Android SDK if missing, writes local.properties,
 # bootstraps the Gradle wrapper, then runs the build. Safe to re-run.
@@ -12,6 +16,12 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 CMD="${1:-debug}"
+
+# Commands that don't need the Android toolchain.
+if [ "$CMD" = "page" ]; then
+  command -v python3 >/dev/null 2>&1 || { echo "python3 is required for 'page'." >&2; exit 1; }
+  exec python3 tools/update_landing.py
+fi
 SDK_DIR="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-$HOME/android-sdk}}"
 CMDLINE_TOOLS_URL="https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip"
 GRADLE_VERSION="8.9"
@@ -117,27 +127,61 @@ chmod +x ./gradlew
 
 # ---------------------------------------------------------------- 5. Build
 mkdir -p dist
+
+# Version comes from one place: app/build.gradle.kts
+VERSION_NAME="$(sed -n 's/^val appVersionName = "\(.*\)".*/\1/p' app/build.gradle.kts | head -1)"
+VERSION_CODE="$(sed -n 's/^val appVersionCode = \([0-9][0-9]*\).*/\1/p' app/build.gradle.kts | head -1)"
+[ -n "$VERSION_NAME" ] && [ -n "$VERSION_CODE" ] \
+  || fail "Couldn't read appVersionName / appVersionCode from app/build.gradle.kts"
+
+if [ -f CHANGELOG.md ] && ! grep -qE "^## ${VERSION_NAME//./\\.} \(${VERSION_CODE}\)" CHANGELOG.md; then
+  log "Warning: CHANGELOG.md has no '## ${VERSION_NAME} (${VERSION_CODE}) — <date>' entry yet."
+fi
+
+newest_apk() { ls -t "$1"/*.apk 2>/dev/null | head -1 || true; }
+
+# publish_apk <built-apk> <kind>  ->  dist/locked-v<version>-<kind>.apk (+ .sha256)
+publish_apk() {
+  local src="$1" kind="$2" dest="dist/locked-v${VERSION_NAME}-${kind}.apk"
+  [ -n "$src" ] && [ -f "$src" ] || fail "Build finished but no APK was found."
+  if [ -f "$dest" ] && ! cmp -s "$src" "$dest"; then
+    log "Replacing existing $dest. For a new release, bump appVersionName/appVersionCode first."
+  fi
+  cp "$src" "$dest"
+  (cd dist && sha256sum "$(basename "$dest")" > "$(basename "$dest").sha256")
+  log "Built v${VERSION_NAME} (code ${VERSION_CODE}) → $dest"
+}
+
+update_landing() {
+  if command -v python3 >/dev/null 2>&1; then
+    python3 tools/update_landing.py || log "Couldn't refresh index.html (see above)."
+  else
+    log "python3 not found; skipped refreshing index.html (run: ./builder.sh page)."
+  fi
+}
+
 case "$CMD" in
   debug)
     ./gradlew --console=plain assembleDebug
-    cp app/build/outputs/apk/debug/app-debug.apk dist/locked-debug.apk
-    log "Done → dist/locked-debug.apk"
+    publish_apk "$(newest_apk app/build/outputs/apk/debug)" debug
+    update_landing
     ;;
   release)
     ./gradlew --console=plain assembleRelease
-    cp app/build/outputs/apk/release/app-release-unsigned.apk dist/locked-release-unsigned.apk
-    log "Done → dist/locked-release-unsigned.apk (sign it before installing)"
+    publish_apk "$(newest_apk app/build/outputs/apk/release)" release-unsigned
+    log "Sign the release APK before installing it."
     ;;
   install)
     ./gradlew --console=plain assembleDebug
-    cp app/build/outputs/apk/debug/app-debug.apk dist/locked-debug.apk
+    publish_apk "$(newest_apk app/build/outputs/apk/debug)" debug
+    update_landing
     command -v adb >/dev/null 2>&1 || export PATH="$SDK_DIR/platform-tools:$PATH"
-    adb install -r dist/locked-debug.apk
+    adb install -r "dist/locked-v${VERSION_NAME}-debug.apk"
     ;;
   clean)
     ./gradlew --console=plain clean
     ;;
   *)
-    fail "Unknown command '$CMD'. Use: debug | release | install | clean"
+    fail "Unknown command '$CMD'. Use: debug | release | install | page | clean"
     ;;
 esac

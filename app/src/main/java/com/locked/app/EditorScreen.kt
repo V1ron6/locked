@@ -42,7 +42,9 @@ fun EditorScreen(
     initial: Schedule,
     isNew: Boolean,
     onBack: () -> Unit,
+    globalPkgs: Set<String>,
     onPickApps: (Schedule) -> Unit,
+    onEditGlobal: (Schedule) -> Unit,
     onSave: (Schedule) -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -52,13 +54,16 @@ fun EditorScreen(
     var start by remember { mutableStateOf(initial.startMin) }
     var end by remember { mutableStateOf(initial.endMin) }
     var picking by remember { mutableStateOf<String?>(null) }
+    var useGlobal by remember { mutableStateOf(initial.useGlobal) }
 
     fun draft() = initial.copy(
         name = name.trim().ifEmpty { "Focus" },
         days = days, startMin = start, endMin = end,
+        useGlobal = useGlobal,
     )
 
-    val valid = days.isNotEmpty() && initial.packages.isNotEmpty()
+    val valid = days.isNotEmpty() &&
+        (if (useGlobal) globalPkgs.isNotEmpty() else initial.packages.isNotEmpty())
 
     Scaffold(containerColor = cs.background) { pad ->
         Column(Modifier.fillMaxSize().padding(pad)) {
@@ -119,23 +124,14 @@ fun EditorScreen(
                 }
 
                 SectionLabel("Apps to lock")
-                Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
-                        .background(cs.surface).clickable { onPickApps(draft()) }.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    IconBadge(R.drawable.ic_layout_grid, cs.primary)
-                    Spacer(Modifier.padding(6.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text("Choose apps", fontWeight = FontWeight.Medium)
-                        Text(
-                            if (initial.packages.isEmpty()) "None selected" else "${initial.packages.size} selected",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (initial.packages.isEmpty()) cs.error else cs.onSurfaceVariant,
-                        )
-                    }
-                    Ic(R.drawable.ic_chevron_right, tint = cs.onSurfaceVariant)
-                }
+                BlockListChooser(
+                    useGlobal = useGlobal,
+                    globalCount = globalPkgs.size,
+                    customCount = initial.packages.size,
+                    onUseGlobal = { useGlobal = it },
+                    onEditGlobal = { onEditGlobal(draft()) },
+                    onEditCustom = { onPickApps(draft()) },
+                )
                 Text(
                     "Each session runs 25 minutes of focus, then a 5-minute break with apps unlocked, repeating until the end time.",
                     style = MaterialTheme.typography.bodySmall,
@@ -192,10 +188,14 @@ fun TimeDialog(initial: Int, onDismiss: () -> Unit, onPick: (Int) -> Unit) {
 @Composable
 fun QuickStartScreen(
     pkgs: Set<String>,
+    useGlobal: Boolean,
+    globalCount: Int,
     minutes: Int,
     onMinutes: (Int) -> Unit,
+    onUseGlobal: (Boolean) -> Unit,
     onBack: () -> Unit,
     onPickApps: () -> Unit,
+    onEditGlobal: () -> Unit,
     onStart: () -> Unit,
 ) {
     val cs = MaterialTheme.colorScheme
@@ -223,27 +223,18 @@ fun QuickStartScreen(
                 )
 
                 SectionLabel("Apps to lock")
-                Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
-                        .background(cs.surface).clickable(onClick = onPickApps).padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    IconBadge(R.drawable.ic_layout_grid, cs.primary)
-                    Spacer(Modifier.padding(6.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text("Choose apps", fontWeight = FontWeight.Medium)
-                        Text(
-                            if (pkgs.isEmpty()) "None selected" else "${pkgs.size} selected",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (pkgs.isEmpty()) cs.error else cs.onSurfaceVariant,
-                        )
-                    }
-                    Ic(R.drawable.ic_chevron_right, tint = cs.onSurfaceVariant)
-                }
+                BlockListChooser(
+                    useGlobal = useGlobal,
+                    globalCount = globalCount,
+                    customCount = pkgs.size,
+                    onUseGlobal = onUseGlobal,
+                    onEditGlobal = onEditGlobal,
+                    onEditCustom = onPickApps,
+                )
             }
             Button(
                 onClick = onStart,
-                enabled = pkgs.isNotEmpty(),
+                enabled = if (useGlobal) globalCount > 0 else pkgs.isNotEmpty(),
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
             ) {

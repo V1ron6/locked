@@ -142,7 +142,9 @@ newest_apk() { ls -t "$1"/*.apk 2>/dev/null | head -1 || true; }
 
 # publish_apk <built-apk> <kind>  ->  dist/locked-v<version>-<kind>.apk (+ .sha256)
 publish_apk() {
-  local src="$1" kind="$2" dest="dist/locked-v${VERSION_NAME}-${kind}.apk"
+  local src="$1"
+  local kind="$2"
+  local dest="dist/locked-v${VERSION_NAME}-${kind}.apk"
   [ -n "$src" ] && [ -f "$src" ] || fail "Build finished but no APK was found."
   if [ -f "$dest" ] && ! cmp -s "$src" "$dest"; then
     log "Replacing existing $dest. For a new release, bump appVersionName/appVersionCode first."

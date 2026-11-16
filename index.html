@@ -295,6 +295,23 @@
 /*RELEASES:START*/
 const RELEASES = [
   {
+    "version": "0.2.0",
+    "code": 2,
+    "date": "2026-11-15",
+    "file": "dist/locked-v0.2.0-debug.apk",
+    "size": 9644022,
+    "sha256": "dc27852cd8091d0fcc6197f184491b9090648c664892de6ea9bac575542bec2a",
+    "notes": [
+      "Global block list: build one list of distracting apps (Settings → Block lists) and reuse it everywhere.",
+      "Every schedule, and \"Start now\", can lock either the Global list or its own Custom list.",
+      "Editing the global list updates all schedules that use it, including ones already saved.",
+      "Schedule cards show which list they use; new schedules default to the global list once you have one.",
+      "Existing schedules keep their own app list, so nothing changes until you switch them over.",
+      "APKs are now named `locked-v<version>-debug.apk`, and older builds stay in `dist/`.",
+      "Added a download page (`index.html`) that lists every build, newest first."
+    ]
+  },
+  {
     "version": "0.1.0",
     "code": 1,
     "date": "2026-11-15",
